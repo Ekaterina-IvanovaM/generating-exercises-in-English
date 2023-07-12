@@ -5,6 +5,31 @@ from class_genTasksEng import genTasksEng
 
 def click_button(key, value):
     st.session_state[key] = value
+    
+            
+def check_answer(user_answer, right_answer, type_task):
+    if type_task == 'correct_word_order':
+        if len(user_answer) < len(right_answer):
+            pass
+        elif user_answer == right_answer:
+            st.success('', icon="✅")
+        else:
+            st.error('', icon="❌")
+    elif 'select' in type_task:
+        if user_answer == '–––':
+            pass
+        elif user_answer == right_answer:
+            st.success('', icon="✅")
+        else:
+            st.error('', icon="❌")   
+    elif 'write' in type_task:
+        if user_answer == '':
+            pass                           
+        elif user_answer == right_answer:
+            st.success('', icon="✅")
+        else:
+            st.error('', icon="❌")            
+
 
 st.title('Генератор упражнений по английскому языку')
         
@@ -33,11 +58,16 @@ with st.sidebar:
     
 
     
-if gen_tasks_button and str_file is None and len(str_text) == 0:
+text_not_uploaded = str_file is None and len(str_text) == 0
+exercises_not_selected = select_word_by_meaning == 0 and select_verb_by_form == 0 and select_articles == 0 and \
+    select_indefinite_pronouns == 0 and write_adp_word == 0 and write_verbs == 0 and correct_word_order == 0
+    
+if gen_tasks_button and text_not_uploaded:
     st.subheader('**:red[Для создания упражнений загрузите файл или вставьте текст в поле на боковой панеле]**')
-elif gen_tasks_button and select_word_by_meaning == 0 and select_verb_by_form == 0 and select_articles == 0 and \
-select_indefinite_pronouns == 0 and write_adp_word == 0 and write_verbs == 0 and correct_word_order == 0:
+    
+elif gen_tasks_button and exercises_not_selected:
     st.subheader('**:red[Выберете хотя бы один тип упражнения на боковой панеле]**')
+    
 elif gen_tasks_button: 
     with st.spinner('Идёт генерация упражнений...'):
         if str_file is not None:
@@ -45,7 +75,6 @@ elif gen_tasks_button:
         elif len(str_text) > 0:
             text = str_text
 
-        # Складываем в словарь все типы упраженний. 1 - данный тип упражнений будет сгенерирован, 0 - не будет
         used_task_type = {
             'select_word_by_meaning': select_word_by_meaning, 
             'select_verb_by_form': select_verb_by_form,
@@ -64,9 +93,11 @@ elif gen_tasks_button:
         class_genTasksEng.set_task_type()
         st.session_state.df = class_genTasksEng.generating_tasks()
          
+
     
 if 'df' in st.session_state:
     for ind, row in st.session_state.df.iterrows():
+               
         if row['type_task'] == 'no_tasks':
             st.write(row['source_text'])
         else:
@@ -98,45 +129,28 @@ if 'df' in st.session_state:
                                                            row['options'], 
                                                            key=widget_key, 
                                                            label_visibility="collapsed")
-                    if len(options_correct_order) < len(row['answer']):
-                        pass
-                    elif options_correct_order == row['answer']:
-                        st.success('', icon="✅")
-                    else:
-                        st.error('', icon="❌")
-                    
+                    check_answer(options_correct_order, row['answer'], row['type_task'])                    
                     st.button('Показать ответ', key='but'+widget_key, on_click=click_button, args=(widget_key, row['answer']))
                         
-                else:                   
-                    if 'select' in row['type_task']:
-                        for i in range(len(row['answer'])):
-                            widget_key = ind*10 + i
-                            option = row['options'][i]
-                            answer = st.selectbox('nolabel', ['–––'] + option, key=widget_key, label_visibility="collapsed")
-                            if answer == '–––':
-                                pass
-                            elif answer == row['answer'][i]:
-                                st.success('', icon="✅")
-                            else:
-                                st.error('', icon="❌")   
-                    elif 'write' in row['type_task']:
-                        for i in range(len(row['answer'])):
-                            widget_key = ind*10 + i
-                            if row['type_task'] == 'write_verbs':
-                                answer = st.text_input(' ', key=widget_key, label_visibility="visible",
-                                                      help='Если ответ содержит вспомогательный глагол, и между ним и основным глаголом ' + 
-                                                       'есть другие слова, например, подлежащее, то ответ должен их включать.')
-                            else:
-                                answer = st.text_input('nolabel', key=widget_key, label_visibility="collapsed")
-                            if answer == '':
-                                pass                           
-                            elif answer == row['answer'][i]:
-                                st.success('', icon="✅")
-                            else:
-                                st.error('', icon="❌") 
-                               
-                            st.button('Показать ответ', key='but'+str(widget_key), on_click=click_button, 
-                                      args=(str(widget_key), row['answer'][i])) 
+                elif 'select' in row['type_task']:
+                    for i in range(len(row['answer'])):
+                        widget_key = ind*10 + i
+                        answer = st.selectbox('nolabel', ['–––'] + row['options'][i], key=widget_key, label_visibility="collapsed")
+                        check_answer(answer, row['answer'][i], row['type_task'])
+                            
+                elif 'write' in row['type_task']:
+                    for i in range(len(row['answer'])):
+                        widget_key = ind*10 + i
+                        if row['type_task'] == 'write_verbs':
+                            answer = st.text_input(' ', key=widget_key, label_visibility="visible",
+                                                  help='Если ответ содержит вспомогательный глагол, и между ним и основным глаголом ' + 
+                                                   'есть другие слова, например, подлежащее, то ответ должен их включать.')
+                        else:
+                            answer = st.text_input('nolabel', key=widget_key, label_visibility="collapsed")
+                            
+                        check_answer(answer, row['answer'][i], row['type_task']) 
+                        st.button('Показать ответ', key='but'+str(widget_key), on_click=click_button, 
+                                  args=(str(widget_key), row['answer'][i])) 
             
             with col2:               
                 if row['type_task'] == 'correct_word_order':
