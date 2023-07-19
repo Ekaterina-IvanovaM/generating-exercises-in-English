@@ -87,13 +87,19 @@ elif gen_tasks_button:
         
         
         for key in st.session_state.keys():
-            del st.session_state[key]
+            if key != 'iter':
+                del st.session_state[key]
+            
+        if 'iter' not in st.session_state:
+            st.session_state.iter = 0
+        else:
+            st.session_state.iter += 1
+            
         
         class_genTasksEng = genTasksEng(text, used_task_type, percent_used_sent)
         class_genTasksEng.set_task_type()
         st.session_state.df = class_genTasksEng.generating_tasks()
          
-
     
 if 'df' in st.session_state:
     for ind, row in st.session_state.df.iterrows():
@@ -124,7 +130,7 @@ if 'df' in st.session_state:
                              
             with col3:                
                 if row['type_task'] == 'correct_word_order':
-                    widget_key = 'co' + str(ind)
+                    widget_key = 'co' + str(st.session_state.iter) + str(ind)
                     options_correct_order = st.multiselect('nolabel', 
                                                            row['options'], 
                                                            key=widget_key, 
@@ -134,13 +140,13 @@ if 'df' in st.session_state:
                         
                 elif 'select' in row['type_task']:
                     for i in range(len(row['answer'])):
-                        widget_key = ind*10 + i
+                        widget_key = 'se' + str(st.session_state.iter) + str(ind) + str(i)
                         answer = st.selectbox('nolabel', ['–––'] + row['options'][i], key=widget_key, label_visibility="collapsed")
                         check_answer(answer, row['answer'][i], row['type_task'])
                             
                 elif 'write' in row['type_task']:
                     for i in range(len(row['answer'])):
-                        widget_key = ind*10 + i
+                        widget_key = 'wr' + str(st.session_state.iter) + str(ind) + str(i)
                         if row['type_task'] == 'write_verbs':
                             answer = st.text_input(' ', key=widget_key, label_visibility="visible",
                                                   help='Если ответ содержит вспомогательный глагол, и между ним и основным глаголом ' + 
